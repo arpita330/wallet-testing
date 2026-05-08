@@ -19,11 +19,11 @@ async function sendAlert(tg_id, message) {
 }
 
 function debitMsg(amount, toDisplay, txnLabel, date, balance) {
-  return `🔴 DEBIT ALERT BY UNIO 🔴\n\n━━━━━━━━━━━━━━\n🔴   UNIO WALLET ✅ 😘 🔴\n━━━━━━━━━━━━━━\n\n💰 Amount : ₹${amount}\n👤 To : ${toDisplay}\n🆔 Txn ID : ${txnLabel}\n📋 Type : API TRANSFER\n📅 Date : ${date}\n\n━━━━━━━━━━━━━━\n🪙 Total Balance : ₹${balance}\n━━━━━━━━━━━━━━\n\n❌ Amount Debited through UNIO Wallet 🔴`;
+  return `🔴 DEBIT ALERT BY SECURE WALLET 🔴\n\n━━━━━━━━━━━━━━\n🔴   SECURE WALLET ✅ 😘 🔴\n━━━━━━━━━━━━━━\n\n💰 Amount : ₹${amount}\n👤 To : ${toDisplay}\n🆔 Txn ID : ${txnLabel}\n📋 Type : API TRANSFER\n📅 Date : ${date}\n\n━━━━━━━━━━━━━━\n🪙 Total Balance : ₹${balance}\n━━━━━━━━━━━━━━\n\n❌ Amount Debited through UNIO Wallet 🔴`;
 }
 
 function creditMsg(amount, fromDisplay, txnLabel, date, balance) {
-  return `🟢 CREDIT SUCCESSFUL BY UNIO 🟢\n\n━━━━━━━━━━━━━━\n🟢   UNIO WALLET ✅ 😘 🟢\n━━━━━━━━━━━━━━\n\n💰 Amount : ₹${amount}\n👤 From : ${fromDisplay}\n🆔 Txn ID : ${txnLabel}\n📋 Type : API TRANSFER\n📅 Date : ${date}\n\n━━━━━━━━━━━━━━\n🪙 Total Balance : ₹${balance}\n━━━━━━━━━━━━━━\n\n✅ Transaction Completed through UNIO Wallet 🟢`;
+  return `🟢 CREDIT SUCCESSFUL BY SECURE 🟢\n\n━━━━━━━━━━━━━━\n🟢   SECURE WALLET ✅ 😘 🟢\n━━━━━━━━━━━━━━\n\n💰 Amount : ₹${amount}\n👤 From : ${fromDisplay}\n🆔 Txn ID : ${txnLabel}\n📋 Type : API TRANSFER\n📅 Date : ${date}\n\n━━━━━━━━━━━━━━\n🪙 Total Balance : ₹${balance}\n━━━━━━━━━━━━━━\n\n✅ Transaction Completed through UNIO Wallet 🟢`;
 }
 
 function transferDebitMsg(amount, toMobile, txnLabel, date, balance) {
@@ -39,12 +39,12 @@ function withdrawMsg(mobile, amount, upi) {
 }
 
 function adminApiMsg(amount, fromDisplay, toDisplay, txnLabel, date) {
-  return `📡 NEW API TXN — UNIO ADMIN\n\n━━━━━━━━━━━━━━\n🔷   UNIO WALLET ADMIN 🔷\n━━━━━━━━━━━━━━\n\n💰 Amount : ₹${amount}\n📤 From : ${fromDisplay}\n📥 To : ${toDisplay}\n🆔 Txn ID : ${txnLabel}\n📋 Type : API TRANSFER\n📅 Date : ${date}\n\n━━━━━━━━━━━━━━\n✅ Transaction Logged Successfully`;
+  return `📡 NEW API TXN — SECURE WALLET ADMIN\n\n━━━━━━━━━━━━━━\n🔷   SECURE WALLET ADMIN 🔷\n━━━━━━━━━━━━━━\n\n💰 Amount : ₹${amount}\n📤 From : ${fromDisplay}\n📥 To : ${toDisplay}\n🆔 Txn ID : ${txnLabel}\n📋 Type : API TRANSFER\n📅 Date : ${date}\n\n━━━━━━━━━━━━━━\n✅ Transaction Logged Successfully`;
 }
 
 function txnLabel(id, amount) {
   const crypto = require('crypto');
-  return 'UNIO' + crypto.createHash('md5').update(String(id) + String(amount)).digest('hex').slice(0,10).toUpperCase();
+  return 'SECURE WALLET' + crypto.createHash('md5').update(String(id) + String(amount)).digest('hex').slice(0,10).toUpperCase();
 }
 
 module.exports = { sendAlert, fmtDate, IST, debitMsg, creditMsg, transferDebitMsg, transferCreditMsg, withdrawMsg, adminApiMsg, txnLabel };
