@@ -23,7 +23,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#f0f4ff;min-height:10
 .login-err.show{display:block}
 @keyframes spin{to{transform:rotate(360deg)}}
 /* Dashboard */
-.top-bar{background:white;border-bottom:1px solid #f1f5f9;padding:1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.05)}
+.top-bar{background:white;border-bottom:1px solid #f1f5f9;padding:1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.05);flex-wrap:wrap;gap:0.5rem}
 .top-bar h1{font-size:.9rem;font-weight:900;color:#0057ff;font-style:italic;text-transform:uppercase}
 .container{max-width:600px;margin:0 auto;padding:1.25rem}
 .tabs{display:flex;background:white;border-radius:1rem;padding:4px;margin-bottom:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.05);overflow-x:auto;gap:4px}
@@ -71,6 +71,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#f0f4ff;min-height:10
 .empty{text-align:center;padding:2rem;color:#94a3b8;font-size:.8rem}
 .refresh-btn{background:#eff6ff;border:none;color:#0057ff;padding:.5rem 1rem;border-radius:.75rem;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:1rem}
 .logout-btn{background:#fee2e2;border:none;color:#dc2626;padding:.5rem 1rem;border-radius:.75rem;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit;margin-left:.5rem}
+.top-actions{display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -95,8 +96,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#f0f4ff;min-height:10
 
 <div class="top-bar">
   <h1>UNIO Admin</h1>
-  <div>
-    <button class="refresh-btn" onclick="loadStats();loadWithdrawals();loadDeposits();loadTxns();loadUsers();" style="margin-bottom:0"><i class="fa-solid fa-rotate-right"></i> Refresh All</button>
+  <div class="top-actions">
+    <button class="refresh-btn" onclick="refreshAll()" style="margin-bottom:0"><i class="fa-solid fa-rotate-right"></i> Refresh All</button>
     <button class="logout-btn" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
   </div>
 </div>
@@ -167,10 +168,30 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#f0f4ff;min-height:10
 </div>
 
 <script>
-const API       = '';
+// ============ CONFIGURATION ============
+// CHANGE THIS TO YOUR ACTUAL BACKEND URL
+const API = '';  // Example: 'https://your-domain.com' or 'http://localhost:3000'
+// If your API endpoints are like /api/admin/stats, then change to: const API = '/api';
+
 const ADMIN_KEY = '8435';
+
+// ============ HELPER FUNCTIONS ============
 function aH()  { return {'x-admin-key': ADMIN_KEY}; }
 function aHJ() { return {'Content-Type':'application/json','x-admin-key': ADMIN_KEY}; }
+
+// Safe fetch wrapper to handle network errors gracefully
+async function safeFetch(url, options = {}) {
+  try {
+    const fullUrl = API ? `${API}${url}` : url;
+    console.log('Fetching:', fullUrl);
+    const response = await fetch(fullUrl, options);
+    const data = await response.json();
+    return { success: true, data: data, status: response.status };
+  } catch (error) {
+    console.error('Fetch error:', error);
+    return { success: false, error: error.message };
+  }
+}
 
 // Auto login
 window.onload = function() {
@@ -223,7 +244,17 @@ function logout() {
 function showDashboard() {
   document.getElementById('login-wrap').style.display = 'none';
   document.getElementById('dashboard').style.display  = 'block';
-  loadStats(); loadWithdrawals(); loadDeposits();
+  loadStats();
+  loadWithdrawals();
+  loadDeposits();
+}
+
+function refreshAll() {
+  loadStats();
+  loadWithdrawals();
+  loadDeposits();
+  loadTxns();
+  loadUsers();
 }
 
 function switchTab(tab, el) {
@@ -242,259 +273,320 @@ function showMsg(id, text, type) {
   setTimeout(()=>m.className='msg', 3000);
 }
 
+// ============ STATS ============
 async function loadStats() {
-  try {
-    const r=await fetch(API+'/admin/stats',{headers:aH()});
-    const d=await r.json();
-    if(d.status==='success'){
-      document.getElementById('s-users').textContent = d.users||0;
-      document.getElementById('s-txns').textContent  = d.transactions||0;
-      document.getElementById('s-bal').textContent   = '₹'+parseFloat(d.total_balance||0).toFixed(2);
-      document.getElementById('s-api').textContent   = '₹'+parseFloat(d.api_volume||0).toFixed(2);
-    }
-  } catch(e){
-    console.error('Stats error:', e);
+  const result = await safeFetch('/admin/stats', {headers: aH()});
+  
+  if (!result.success) {
+    console.error('Failed to load stats:', result.error);
+    return;
+  }
+  
+  const d = result.data;
+  if(d.status === 'success') {
+    document.getElementById('s-users').textContent = d.users || 0;
+    document.getElementById('s-txns').textContent  = d.transactions || 0;
+    document.getElementById('s-bal').textContent   = '₹' + parseFloat(d.total_balance || 0).toFixed(2);
+    document.getElementById('s-api').textContent   = '₹' + parseFloat(d.api_volume || 0).toFixed(2);
   }
 }
 
+// ============ WITHDRAWALS ============
 async function loadWithdrawals() {
-  const list=document.getElementById('withdraw-list');
-  try {
-    const r=await fetch(API+'/admin/withdrawals',{headers:aH()});
-    const d=await r.json();
-    if(!d.withdrawals||d.withdrawals.length===0){
-      list.innerHTML='<div class="empty"><i class="fa-solid fa-check-circle" style="color:#16a34a"></i><br>No pending withdrawals!</div>';return;
-    }
-    let html='';
-    d.withdrawals.forEach(w=>{
-      const mobile=w.sender_id?.mobile||'—';
-      const name=w.sender_id?.name||'User';
-      const amt=parseFloat(w.amount).toFixed(2);
-      const upi=w.remark||'—';
-      const time=new Date(w.tx_time).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-      html+=`<div class="req-item" id="wd-${w._id}">
-        <div class="req-top"><div class="req-info"><p>${name}</p><span>&#128241; ${mobile}</span></div><div class="req-amt">&#8377;${amt}<small>${time}</small></div></div>
-        <div class="req-detail"><i class="fa-solid fa-wallet" style="color:#0057ff"></i> UPI: <span>${upi}</span></div>
-        <div class="req-btns">
-          <button class="approve-btn" id="wabtn-${w._id}" onclick="approveWithdraw('${w.tx_id}','${w._id}')"><i class="fa-solid fa-check"></i> Approve</button>
-          <button class="reject-btn" onclick="rejectWithdraw('${w.tx_id}','${w._id}')"><i class="fa-solid fa-xmark"></i> Reject</button>
-        </div>
-      </div>`;
-    });
-    list.innerHTML=html;
-  }catch(e){
-    list.innerHTML='<div class="empty">Error loading withdrawals!</div>';
-    console.error('Withdrawals error:', e);
+  const list = document.getElementById('withdraw-list');
+  const result = await safeFetch('/admin/withdrawals', {headers: aH()});
+  
+  if (!result.success) {
+    list.innerHTML = '<div class="empty">Server error! Check console for details.</div>';
+    return;
   }
+  
+  const d = result.data;
+  if(!d.withdrawals || d.withdrawals.length === 0) {
+    list.innerHTML = '<div class="empty"><i class="fa-solid fa-check-circle" style="color:#16a34a"></i><br>No pending withdrawals!</div>';
+    return;
+  }
+  
+  let html = '';
+  d.withdrawals.forEach(w=>{
+    const mobile = w.sender_id?.mobile || '—';
+    const name = w.sender_id?.name || 'User';
+    const amt = parseFloat(w.amount).toFixed(2);
+    const upi = w.remark || '—';
+    const time = new Date(w.tx_time).toLocaleString('en-IN', {timeZone:'Asia/Kolkata', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
+    html += `<div class="req-item" id="wd-${w._id}">
+      <div class="req-top"><div class="req-info"><p>${name}</p><span>&#128241; ${mobile}</span></div><div class="req-amt">&#8377;${amt}<small>${time}</small></div></div>
+      <div class="req-detail"><i class="fa-solid fa-wallet" style="color:#0057ff"></i> UPI: <span>${upi}</span></div>
+      <div class="req-btns">
+        <button class="approve-btn" id="wabtn-${w._id}" onclick="approveWithdraw('${w.tx_id}','${w._id}')"><i class="fa-solid fa-check"></i> Approve</button>
+        <button class="reject-btn" onclick="rejectWithdraw('${w.tx_id}','${w._id}')"><i class="fa-solid fa-xmark"></i> Reject</button>
+      </div>
+    </div>`;
+  });
+  list.innerHTML = html;
 }
 
 async function approveWithdraw(tx_id, id) {
   if(!confirm('Approve withdrawal?')) return;
-  const btn=document.getElementById('wabtn-'+id);
-  const el=document.getElementById('wd-'+id);
-  if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i>';}
-  try{
-    const r=await fetch(API+'/admin/approve-withdraw/'+tx_id,{method:'POST',headers:aH()});
-    const d=await r.json();
-    if(d.status==='success'){
-      if(el){el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);}
-      showMsg('bal-msg','Withdrawal approved!','success');
-    } else {
-      showMsg('bal-msg',d.message||'Failed!','error');
-      if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-check"></i> Approve';}
-    }
-  }catch(e){
-    showMsg('bal-msg','Server error!','error');
-    if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-check"></i> Approve';}
+  const btn = document.getElementById('wabtn-' + id);
+  const el = document.getElementById('wd-' + id);
+  if(btn){btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';}
+  
+  const result = await safeFetch('/admin/approve-withdraw/' + tx_id, {method: 'POST', headers: aH()});
+  
+  if (!result.success) {
+    showMsg('bal-msg', 'Server error!', 'error');
+    if(btn){btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Approve';}
+    return;
+  }
+  
+  const d = result.data;
+  if(d.status === 'success') {
+    if(el){el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(()=>el.remove(), 300);}
+    showMsg('bal-msg', 'Withdrawal approved!', 'success');
+  } else {
+    showMsg('bal-msg', d.message || 'Failed!', 'error');
+    if(btn){btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Approve';}
   }
 }
 
 async function rejectWithdraw(tx_id, id) {
   if(!confirm('Reject & refund?')) return;
-  const el=document.getElementById('wd-'+id);
-  try{
-    const r=await fetch(API+'/admin/reject-withdraw/'+tx_id,{method:'POST',headers:aH()});
-    const d=await r.json();
-    if(d.status==='success'){
-      if(el){el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);}
-      showMsg('bal-msg','Withdrawal rejected & refunded!','success');
-    } else showMsg('bal-msg',d.message||'Failed!','error');
-  }catch(e){showMsg('bal-msg','Server error!','error');}
-}
-
-async function loadDeposits() {
-  const list=document.getElementById('deposit-list');
-  try{
-    const r=await fetch(API+'/admin/transactions',{headers:aH()});
-    const d=await r.json();
-    const deps=(d.transactions||[]).filter(t=>t.status==='pending'&&t.remark?.startsWith('UTR:'));
-    if(deps.length===0){
-      list.innerHTML='<div class="empty"><i class="fa-solid fa-check-circle" style="color:#16a34a"></i><br>No pending deposits!</div>';return;
-    }
-    let html='';
-    deps.forEach(dep=>{
-      const mobile=dep.receiver_id?.mobile||'—';
-      const name=dep.receiver_id?.name||'User';
-      const utr=dep.remark.replace('UTR:','').trim();
-      const amt=parseFloat(dep.amount).toFixed(2);
-      const time=new Date(dep.tx_time).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-      html+=`<div class="req-item" id="dep-${dep._id}">
-        <div class="req-top"><div class="req-info"><p>${name}</p><span>&#128241; ${mobile}</span></div><div class="req-amt">&#8377;${amt}<small>${time}</small></div></div>
-        <div class="req-detail"><i class="fa-solid fa-receipt" style="color:#0057ff"></i> UTR: <span>${utr}</span></div>
-        <div class="req-btns">
-          <button class="approve-btn" id="abtn-${dep._id}" onclick="approveDeposit('${dep._id}','${mobile}','${amt}')"><i class="fa-solid fa-check"></i> Approve</button>
-          <button class="reject-btn" onclick="rejectDeposit('${dep._id}')"><i class="fa-solid fa-xmark"></i> Reject</button>
-        </div>
-      </div>`;
-    });
-    list.innerHTML=html;
-  }catch(e){
-    list.innerHTML='<div class="empty">Error loading deposits!</div>';
-    console.error('Deposits error:', e);
+  const el = document.getElementById('wd-' + id);
+  
+  const result = await safeFetch('/admin/reject-withdraw/' + tx_id, {method: 'POST', headers: aH()});
+  
+  if (!result.success) {
+    showMsg('bal-msg', 'Server error!', 'error');
+    return;
+  }
+  
+  const d = result.data;
+  if(d.status === 'success') {
+    if(el){el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(()=>el.remove(), 300);}
+    showMsg('bal-msg', 'Withdrawal rejected & refunded!', 'success');
+  } else {
+    showMsg('bal-msg', d.message || 'Failed!', 'error');
   }
 }
 
+// ============ DEPOSITS ============
+async function loadDeposits() {
+  const list = document.getElementById('deposit-list');
+  const result = await safeFetch('/admin/transactions', {headers: aH()});
+  
+  if (!result.success) {
+    list.innerHTML = '<div class="empty">Server error! Check console for details.</div>';
+    return;
+  }
+  
+  const d = result.data;
+  const deps = (d.transactions || []).filter(t=>t.status === 'pending' && t.remark?.startsWith('UTR:'));
+  
+  if(deps.length === 0) {
+    list.innerHTML = '<div class="empty"><i class="fa-solid fa-check-circle" style="color:#16a34a"></i><br>No pending deposits!</div>';
+    return;
+  }
+  
+  let html = '';
+  deps.forEach(dep=>{
+    const mobile = dep.receiver_id?.mobile || '—';
+    const name = dep.receiver_id?.name || 'User';
+    const utr = dep.remark.replace('UTR:', '').trim();
+    const amt = parseFloat(dep.amount).toFixed(2);
+    const time = new Date(dep.tx_time).toLocaleString('en-IN', {timeZone:'Asia/Kolkata', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
+    html += `<div class="req-item" id="dep-${dep._id}">
+      <div class="req-top"><div class="req-info"><p>${name}</p><span>&#128241; ${mobile}</span></div><div class="req-amt">&#8377;${amt}<small>${time}</small></div></div>
+      <div class="req-detail"><i class="fa-solid fa-receipt" style="color:#0057ff"></i> UTR: <span>${utr}</span></div>
+      <div class="req-btns">
+        <button class="approve-btn" id="abtn-${dep._id}" onclick="approveDeposit('${dep._id}','${mobile}','${amt}')"><i class="fa-solid fa-check"></i> Approve</button>
+        <button class="reject-btn" onclick="rejectDeposit('${dep._id}')"><i class="fa-solid fa-xmark"></i> Reject</button>
+      </div>
+    </div>`;
+  });
+  list.innerHTML = html;
+}
+
 async function approveDeposit(id, mobile, amount) {
-  if(!confirm('Approve ₹'+amount+' for '+mobile+'?')) return;
-  const btn=document.getElementById('abtn-'+id);
-  const el=document.getElementById('dep-'+id);
-  if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i>';}
-  try{
-    const r=await fetch(API+'/admin/approve-deposit/'+id,{method:'POST',headers:aHJ()});
-    const d=await r.json();
-    if(d.status==='success'){
-      if(el){el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);}
-      showMsg('bal-msg','₹'+amount+' approved for '+mobile+'!','success');
-    } else {
-      showMsg('bal-msg',d.message||'Failed!','error');
-      if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-check"></i> Approve';}
-    }
-  }catch(e){
-    showMsg('bal-msg','Server error!','error');
-    if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-check"></i> Approve';}
+  if(!confirm('Approve ₹' + amount + ' for ' + mobile + '?')) return;
+  const btn = document.getElementById('abtn-' + id);
+  const el = document.getElementById('dep-' + id);
+  if(btn){btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';}
+  
+  const result = await safeFetch('/admin/approve-deposit/' + id, {method: 'POST', headers: aHJ()});
+  
+  if (!result.success) {
+    showMsg('bal-msg', 'Server error!', 'error');
+    if(btn){btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Approve';}
+    return;
+  }
+  
+  const d = result.data;
+  if(d.status === 'success') {
+    if(el){el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(()=>el.remove(), 300);}
+    showMsg('bal-msg', '₹' + amount + ' approved for ' + mobile + '!', 'success');
+  } else {
+    showMsg('bal-msg', d.message || 'Failed!', 'error');
+    if(btn){btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> Approve';}
   }
 }
 
 async function rejectDeposit(id) {
   if(!confirm('Reject this deposit?')) return;
-  const el=document.getElementById('dep-'+id);
-  try{
-    const r=await fetch(API+'/admin/reject-deposit/'+id,{method:'POST',headers:aHJ()});
-    const d=await r.json();
-    if(d.status==='success'){
-      if(el){el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);}
-      showMsg('bal-msg','Deposit rejected!','success');
-    } else showMsg('bal-msg',d.message||'Failed!','error');
-  }catch(e){showMsg('bal-msg','Server error!','error');}
+  const el = document.getElementById('dep-' + id);
+  
+  const result = await safeFetch('/admin/reject-deposit/' + id, {method: 'POST', headers: aHJ()});
+  
+  if (!result.success) {
+    showMsg('bal-msg', 'Server error!', 'error');
+    return;
+  }
+  
+  const d = result.data;
+  if(d.status === 'success') {
+    if(el){el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(()=>el.remove(), 300);}
+    showMsg('bal-msg', 'Deposit rejected!', 'success');
+  } else {
+    showMsg('bal-msg', d.message || 'Failed!', 'error');
+  }
 }
 
+// ============ BALANCE MANAGEMENT ============
 async function addBalance() {
   const mobile = document.getElementById('b-mobile').value.trim();
   const amount = document.getElementById('b-amount').value.trim();
+  
   if(!mobile || !amount) {
-    showMsg('bal-msg','Please fill all fields','error');
+    showMsg('bal-msg', 'Please fill all fields', 'error');
     return;
   }
-  if(!confirm('Add ₹'+amount+' to '+mobile+'?')) return;
-  try{
-    const r=await fetch(API+'/admin/add-balance',{
-      method:'POST',
-      headers:aHJ(),
-      body:JSON.stringify({mobile:mobile,amount:parseFloat(amount)})
-    });
-    const d=await r.json();
-    if(d.status==='success'){
-      showMsg('bal-msg','₹'+amount+' added to '+mobile+'!','success');
-      document.getElementById('b-mobile').value='';
-      document.getElementById('b-amount').value='';
-    } else showMsg('bal-msg',d.message||'Failed!','error');
-  }catch(e){showMsg('bal-msg','Server error!','error');}
+  
+  if(!confirm('Add ₹' + amount + ' to ' + mobile + '?')) return;
+  
+  const result = await safeFetch('/admin/add-balance', {
+    method: 'POST',
+    headers: aHJ(),
+    body: JSON.stringify({mobile: mobile, amount: parseFloat(amount)})
+  });
+  
+  if (!result.success) {
+    showMsg('bal-msg', 'Server error! Check console for details.', 'error');
+    return;
+  }
+  
+  const d = result.data;
+  if(d.status === 'success') {
+    showMsg('bal-msg', '₹' + amount + ' added to ' + mobile + '!', 'success');
+    document.getElementById('b-mobile').value = '';
+    document.getElementById('b-amount').value = '';
+  } else {
+    showMsg('bal-msg', d.message || 'Failed!', 'error');
+  }
 }
 
 async function deductBalance() {
   const mobile = document.getElementById('d-mobile').value.trim();
   const amount = document.getElementById('d-amount').value.trim();
+  
   if(!mobile || !amount) {
-    showMsg('ded-msg','Please fill all fields','error');
+    showMsg('ded-msg', 'Please fill all fields', 'error');
     return;
   }
-  if(!confirm('Deduct ₹'+amount+' from '+mobile+'?')) return;
-  try{
-    const r=await fetch(API+'/admin/deduct-balance',{
-      method:'POST',
-      headers:aHJ(),
-      body:JSON.stringify({mobile:mobile,amount:parseFloat(amount)})
-    });
-    const d=await r.json();
-    if(d.status==='success'){
-      showMsg('ded-msg','₹'+amount+' deducted from '+mobile+'!','success');
-      document.getElementById('d-mobile').value='';
-      document.getElementById('d-amount').value='';
-    } else showMsg('ded-msg',d.message||'Failed!','error');
-  }catch(e){showMsg('ded-msg','Server error!','error');}
+  
+  if(!confirm('Deduct ₹' + amount + ' from ' + mobile + '?')) return;
+  
+  const result = await safeFetch('/admin/deduct-balance', {
+    method: 'POST',
+    headers: aHJ(),
+    body: JSON.stringify({mobile: mobile, amount: parseFloat(amount)})
+  });
+  
+  if (!result.success) {
+    showMsg('ded-msg', 'Server error! Check console for details.', 'error');
+    return;
+  }
+  
+  const d = result.data;
+  if(d.status === 'success') {
+    showMsg('ded-msg', '₹' + amount + ' deducted from ' + mobile + '!', 'success');
+    document.getElementById('d-mobile').value = '';
+    document.getElementById('d-amount').value = '';
+  } else {
+    showMsg('ded-msg', d.message || 'Failed!', 'error');
+  }
 }
 
+// ============ TRANSACTIONS ============
 async function loadTxns() {
-  const list=document.getElementById('txns-list');
-  list.innerHTML='<div class="empty"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>';
-  try{
-    const r=await fetch(API+'/admin/transactions',{headers:aH()});
-    const d=await r.json();
-    if(!d.transactions||d.transactions.length===0){
-      list.innerHTML='<div class="empty">No transactions found!</div>';return;
-    }
-    let html='';
-    d.transactions.forEach(t=>{
-      const amt=parseFloat(t.amount).toFixed(2);
-      const type=t.type||'transfer';
-      const status=t.status||'pending';
-      const time=new Date(t.tx_time).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-      const sender=t.sender_id?.mobile||t.sender_id?.name||'System';
-      const receiver=t.receiver_id?.mobile||t.receiver_id?.name||'System';
-      const badgeClass=status==='success'?'success':status==='failed'?'failed':status==='rejected'?'rejected':'pending';
-      html+=`<div class="txn-item">
-        <div class="txn-left">
-          <p>${sender} → ${receiver}</p>
-          <span>${time} · ${type} · <span class="badge ${badgeClass}">${status}</span></span>
-        </div>
-        <div class="txn-amt">₹${amt}</div>
-      </div>`;
-    });
-    list.innerHTML=html;
-  }catch(e){
-    list.innerHTML='<div class="empty">Error loading transactions!</div>';
-    console.error('Txns error:', e);
+  const list = document.getElementById('txns-list');
+  list.innerHTML = '<div class="empty"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>';
+  
+  const result = await safeFetch('/admin/transactions', {headers: aH()});
+  
+  if (!result.success) {
+    list.innerHTML = '<div class="empty">Server error! Check console for details.</div>';
+    return;
   }
+  
+  const d = result.data;
+  if(!d.transactions || d.transactions.length === 0) {
+    list.innerHTML = '<div class="empty">No transactions found!</div>';
+    return;
+  }
+  
+  let html = '';
+  d.transactions.forEach(t=>{
+    const amt = parseFloat(t.amount).toFixed(2);
+    const type = t.type || 'transfer';
+    const status = t.status || 'pending';
+    const time = new Date(t.tx_time).toLocaleString('en-IN', {timeZone:'Asia/Kolkata', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
+    const sender = t.sender_id?.mobile || t.sender_id?.name || 'System';
+    const receiver = t.receiver_id?.mobile || t.receiver_id?.name || 'System';
+    const badgeClass = status === 'success' ? 'success' : status === 'failed' ? 'failed' : status === 'rejected' ? 'rejected' : 'pending';
+    html += `<div class="txn-item">
+      <div class="txn-left">
+        <p>${sender} → ${receiver}</p>
+        <span>${time} · ${type} · <span class="badge ${badgeClass}">${status}</span></span>
+      </div>
+      <div class="txn-amt">₹${amt}</div>
+    </div>`;
+  });
+  list.innerHTML = html;
 }
 
+// ============ USERS ============
 async function loadUsers() {
-  const list=document.getElementById('users-list');
-  list.innerHTML='<div class="empty"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>';
-  try{
-    const r=await fetch(API+'/admin/users',{headers:aH()});
-    const d=await r.json();
-    if(!d.users||d.users.length===0){
-      list.innerHTML='<div class="empty">No users found!</div>';return;
-    }
-    let html='';
-    d.users.forEach(u=>{
-      const name=u.name||'User';
-      const mobile=u.mobile||'—';
-      const bal=parseFloat(u.balance||0).toFixed(2);
-      html+=`<div class="user-item">
-        <div>
-          <div class="user-name">${name}</div>
-          <div class="user-mob">📱 ${mobile}</div>
-        </div>
-        <div class="user-bal">₹${bal}</div>
-      </div>`;
-    });
-    list.innerHTML=html;
-  }catch(e){
-    list.innerHTML='<div class="empty">Error loading users!</div>';
-    console.error('Users error:', e);
+  const list = document.getElementById('users-list');
+  list.innerHTML = '<div class="empty"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>';
+  
+  const result = await safeFetch('/admin/users', {headers: aH()});
+  
+  if (!result.success) {
+    list.innerHTML = '<div class="empty">Server error! Check console for details.</div>';
+    return;
   }
+  
+  const d = result.data;
+  if(!d.users || d.users.length === 0) {
+    list.innerHTML = '<div class="empty">No users found!</div>';
+    return;
+  }
+  
+  let html = '';
+  d.users.forEach(u=>{
+    const name = u.name || 'User';
+    const mobile = u.mobile || '—';
+    const bal = parseFloat(u.balance || 0).toFixed(2);
+    html += `<div class="user-item">
+      <div>
+        <div class="user-name">${name}</div>
+        <div class="user-mob">📱 ${mobile}</div>
+      </div>
+      <div class="user-bal">₹${bal}</div>
+    </div>`;
+  });
+  list.innerHTML = html;
 }
 </script>
 </body>
-  </html>
+                                                                                                                                                  </html>
