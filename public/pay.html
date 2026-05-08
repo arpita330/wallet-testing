@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pay — UNIO Gateway</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{
+  --blue:#0057ff;--blue-light:#e8efff;
+  --green:#16a34a;--red:#dc2626;--red-light:#fee2e2;
+  --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;
+  --gray-400:#9ca3af;--gray-600:#4b5563;--gray-900:#111827;
+  --white:#fff;--shadow:0 12px 40px rgba(0,87,255,.10);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;min-height:100vh;background:#eef2ff;display:flex;align-items:flex-start;justify-content:center;padding:12px;position:relative;overflow-y:auto}
+body::before{content:'';position:fixed;top:-15%;left:-10%;width:50%;height:50%;background:radial-gradient(circle,rgba(0,87,255,.08),transparent 65%);pointer-events:none}
+body::after{content:'';position:fixed;bottom:-15%;right:-10%;width:45%;height:45%;background:radial-gradient(circle,rgba(124,58,237,.06),transparent 65%);pointer-events:none}
+.wrap{width:100%;max-width:360px;position:relative;z-index:1;margin:0 auto}
+.inv-card{background:var(--white);border-radius:1.4rem;padding:1rem 1.1rem;box-shadow:var(--shadow);margin-bottom:.6rem;animation:popIn .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+.unio-badge{display:flex;align-items:center;gap:.4rem;margin-bottom:.75rem}
+.unio-logo{width:26px;height:26px;background:linear-gradient(135deg,var(--blue),#4d8aff);border-radius:.5rem;display:flex;align-items:center;justify-content:center;color:white;font-size:.65rem}
+.unio-name{font-family:'Syne',sans-serif;font-size:.8rem;font-weight:800;color:var(--gray-900)}
+.unio-sub{font-size:.55rem;color:var(--gray-400);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.merchant-row{display:flex;align-items:center;gap:.55rem;background:var(--gray-50);border-radius:.8rem;padding:.6rem .75rem;margin-bottom:.7rem}
+.merchant-av{width:34px;height:34px;background:linear-gradient(135deg,#7c3aed,#9f67ff);border-radius:.65rem;display:flex;align-items:center;justify-content:center;color:white;font-size:.85rem;font-weight:800;flex-shrink:0}
+.merchant-name{font-size:.82rem;font-weight:700;color:var(--gray-900)}
+.merchant-label{font-size:.58rem;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.amount-box{text-align:center;padding:.5rem 0 .65rem}
+.amount-label{font-size:.6rem;font-weight:700;color:var(--gray-400);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem}
+.amount-val{font-family:'Syne',sans-serif;font-size:2.2rem;font-weight:800;color:var(--gray-900);line-height:1}
+.amount-rs{font-size:1.1rem;color:var(--blue);margin-right:.05rem}
+.note-row{background:var(--blue-light);border-radius:.65rem;padding:.4rem .7rem;font-size:.67rem;font-weight:600;color:var(--blue);margin-bottom:.6rem;display:none}
+.note-row.show{display:block}
+.timer-row{display:flex;align-items:center;justify-content:center;gap:.35rem;font-size:.65rem;font-weight:600;color:var(--gray-400)}
+.timer-val{color:#ea580c;font-weight:800}
+.pay-card{background:var(--white);border-radius:1.4rem;padding:1rem 1.1rem;box-shadow:var(--shadow);animation:popIn .4s cubic-bezier(.34,1.56,.64,1) .1s both}
+.section-title{font-family:'Syne',sans-serif;font-size:.8rem;font-weight:800;color:var(--gray-900);margin-bottom:.75rem}
+.input-group{margin-bottom:.65rem}
+.input-group label{display:block;font-size:.58rem;font-weight:800;text-transform:uppercase;color:var(--gray-400);margin-bottom:.3rem;letter-spacing:.06em}
+.input-group input{width:100%;padding:.7rem .85rem;background:var(--gray-50);border:2px solid var(--gray-200);border-radius:.75rem;font-weight:600;outline:none;font-family:'DM Sans',sans-serif;font-size:.85rem;color:var(--gray-900);transition:all .2s}
+.input-group input:focus{border-color:var(--blue);background:white}
+.input-group input::placeholder{color:var(--gray-400)}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.input-group input.error{border-color:var(--red);background:var(--red-light);animation:shake .3s ease}
+.eye-wrap{position:relative}
+.eye-wrap input{padding-right:2.5rem}
+.eye-btn{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:.85rem;padding:.25rem}
+.btn{width:100%;padding:.8rem;background:var(--blue);color:white;border:none;border-radius:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.45rem;font-family:'DM Sans',sans-serif;font-size:.75rem;transition:all .2s}
+.btn:disabled{background:var(--gray-400);cursor:not-allowed;opacity:.8}
+.btn:active:not(:disabled){transform:scale(.98)}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;display:none;margin-right:4px}
+.btn.loading .spinner{display:inline-block}
+.state{display:none;text-align:center;padding:.75rem 0}
+.state.show{display:block}
+.state-icon{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto .85rem;font-size:1.5rem}
+.state-icon.success{background:#dcfce7;color:var(--green)}
+.state-icon.expired{background:var(--gray-100);color:var(--gray-400)}
+.state-title{font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;color:var(--gray-900);margin-bottom:.35rem}
+.state-sub{font-size:.75rem;color:var(--gray-400);line-height:1.5;margin-bottom:.85rem}
+.txn-chip{display:inline-block;background:var(--gray-100);border-radius:.45rem;padding:.25rem .65rem;font-size:.68rem;font-weight:700;color:var(--gray-600);font-family:monospace;margin-bottom:.6rem}
+.secure-badge{display:flex;align-items:center;justify-content:center;gap:.35rem;font-size:.6rem;color:var(--gray-400);font-weight:600;margin-top:.75rem}
+.toast{position:fixed;bottom:1.25rem;left:50%;transform:translateX(-50%) translateY(20px);background:var(--gray-900);color:white;padding:.55rem 1.1rem;border-radius:2rem;font-size:.72rem;font-weight:600;opacity:0;transition:all .3s;pointer-events:none;z-index:9999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.red{background:var(--red)}
+.toast.green{background:var(--green)}
+/* ── Receipt Card ─────────────────────────────────────── */
+.receipt-card{background:var(--white);border-radius:1.6rem;overflow:hidden;box-shadow:0 20px 60px rgba(0,87,255,.18);animation:popIn .5s cubic-bezier(.34,1.56,.64,1)}
+.receipt-header{background:linear-gradient(135deg,#0057ff 0%,#4d8aff 60%,#7c3aed 100%);padding:2rem 1.5rem 1.4rem;text-align:center;position:relative;overflow:hidden}
+.receipt-header::before{content:'';position:absolute;top:-30%;left:-10%;width:60%;height:120%;background:rgba(255,255,255,.06);border-radius:50%;pointer-events:none}
+#confetti-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.receipt-check-ring{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;margin:0 auto .75rem;animation:ringPop .5s .1s cubic-bezier(.34,1.56,.64,1) both}
+.receipt-check-circle{width:48px;height:48px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;color:#0057ff;font-size:1.3rem}
+@keyframes ringPop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+.receipt-header-text{font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;color:white;margin-bottom:.25rem}
+.receipt-header-sub{font-size:.72rem;color:rgba(255,255,255,.75);font-weight:500}
+.receipt-amount-row{display:flex;align-items:baseline;justify-content:center;gap:.2rem;padding:1.1rem 1.5rem .6rem;animation:popIn .4s .15s both}
+.receipt-currency{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:700;color:var(--blue)}
+.receipt-amount-val{font-family:'Syne',sans-serif;font-size:2.6rem;font-weight:800;color:var(--gray-900);line-height:1}
+.receipt-divider{display:flex;align-items:center;position:relative;padding:0 .75rem;margin-bottom:.75rem}
+.receipt-dot{width:18px;height:18px;border-radius:50%;background:#eef2ff;flex-shrink:0;margin-top:-1px}
+.receipt-dot.left{margin-left:-1.35rem}
+.receipt-dot.right{margin-right:-1.35rem}
+.receipt-dashes{flex:1;border-top:2px dashed var(--gray-200);margin:0 .25rem}
+.receipt-details{padding:0 1.25rem;display:flex;flex-direction:column;gap:.55rem;margin-bottom:.85rem}
+.receipt-row{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+.receipt-row-label{font-size:.67rem;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;display:flex;align-items:center;gap:.3rem}
+.receipt-row-val{font-size:.78rem;font-weight:700;color:var(--gray-900);text-align:right;word-break:break-all}
+.receipt-row-val.mono{font-family:monospace;font-size:.75rem;background:var(--gray-100);padding:.15rem .4rem;border-radius:.35rem;color:var(--gray-600)}
+.receipt-row-val.small{font-size:.66rem}
+.receipt-status-badge{display:flex;align-items:center;justify-content:center;gap:.4rem;background:var(--green-light);color:var(--green);font-size:.67rem;font-weight:700;padding:.4rem .9rem;border-radius:.6rem;margin:0 1.25rem;letter-spacing:.03em}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Invoice info -->
+  <div class="inv-card" id="inv-card">
+    <div class="unio-badge">
+      <div class="unio-logo"><i class="fa-solid fa-wallet"></i></div>
+      <div>
+        <div class="unio-name">UNIO Wallet</div>
+        <div class="unio-sub">Secure Payment Gateway</div>
+      </div>
+    </div>
+    <div class="merchant-row">
+      <div class="merchant-av" id="merchant-av">?</div>
+      <div>
+        <div class="merchant-label">Paying to</div>
+        <div class="merchant-name" id="merchant-name">Loading...</div>
+      </div>
+    </div>
+    <div class="amount-box">
+      <div class="amount-label">Amount to Pay</div>
+      <div class="amount-val"><span class="amount-rs">₹</span><span id="amount-val">—</span></div>
+    </div>
+    <div class="note-row" id="note-row"></div>
+    <div class="timer-row">
+      <i class="fa-regular fa-clock"></i>
+      Expires in <span class="timer-val" id="timer-val">--:--</span>
+    </div>
+  </div>
+
+  <!-- Pay form -->
+  <div class="pay-card" id="pay-form">
+    <div class="section-title"><i class="fa-solid fa-lock" style="color:var(--blue)"></i> Pay with UNIO Wallet</div>
+    <div class="input-group">
+      <label>Registered Mobile Number</label>
+      <input type="tel" id="mobile-input" placeholder="10-digit UNIO mobile" maxlength="10"
+        oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)">
+    </div>
+    <div class="input-group">
+      <label>Password</label>
+      <div class="eye-wrap">
+        <input type="password" id="password-input" placeholder="Account password">
+        <button class="eye-btn" type="button" onclick="toggleEye('password-input','eye1')"><i class="fa-regular fa-eye" id="eye1"></i></button>
+      </div>
+    </div>
+    <div class="input-group">
+      <label>4-Digit PIN</label>
+      <div class="eye-wrap">
+        <input type="password" id="pin-input" placeholder="4-digit PIN" maxlength="4"
+          inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)">
+        <button class="eye-btn" type="button" onclick="toggleEye('pin-input','eye2')"><i class="fa-regular fa-eye" id="eye2"></i></button>
+      </div>
+    </div>
+    <button class="btn" id="pay-btn" onclick="submitPay()">
+      <div class="spinner"></div>
+      <i class="fa-solid fa-shield-halved"></i>&nbsp; Pay ₹<span id="btn-amount">—</span>
+    </button>
+    <div class="secure-badge">
+      <i class="fa-solid fa-lock"></i> Secured by UNIO Wallet · Encrypted
+    </div>
+    <div style="text-align:center;margin-top:.75rem">
+      <a href="https://unio-hazel.vercel.app" target="_blank"
+        style="font-size:.72rem;color:var(--blue);font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;padding:.45rem .9rem;background:var(--blue-light);border-radius:2rem;transition:opacity .2s"
+        onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
+        <i class="fa-solid fa-user-plus"></i> UNIO Wallet pe Register karo
+      </a>
+    </div>
+  </div>
+
+  <!-- Receipt / Success -->
+  <div id="state-success" style="display:none">
+    <div class="receipt-card" id="receipt-card">
+
+      <!-- Top glow header -->
+      <div class="receipt-header">
+        <canvas id="confetti-canvas"></canvas>
+        <div class="receipt-check-ring">
+          <div class="receipt-check-circle">
+            <i class="fa-solid fa-check"></i>
+          </div>
+        </div>
+        <div class="receipt-header-text">Payment Successful</div>
+        <div class="receipt-header-sub">Transaction complete ho gaya ✨</div>
+      </div>
+
+      <!-- Amount big -->
+      <div class="receipt-amount-row">
+        <span class="receipt-currency">₹</span>
+        <span id="r-amount" class="receipt-amount-val">—</span>
+      </div>
+
+      <!-- Divider with dots -->
+      <div class="receipt-divider">
+        <span class="receipt-dot left"></span>
+        <div class="receipt-dashes"></div>
+        <span class="receipt-dot right"></span>
+      </div>
+
+      <!-- Details rows -->
+      <div class="receipt-details">
+        <div class="receipt-row">
+          <span class="receipt-row-label"><i class="fa-solid fa-store"></i> Merchant</span>
+          <span class="receipt-row-val" id="r-merchant">—</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-row-label"><i class="fa-solid fa-hashtag"></i> Txn ID</span>
+          <span class="receipt-row-val mono" id="r-txid">—</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-row-label"><i class="fa-solid fa-file-invoice"></i> Invoice</span>
+          <span class="receipt-row-val mono small" id="r-invid">—</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-row-label"><i class="fa-solid fa-tag"></i> Order ID</span>
+          <span class="receipt-row-val mono" id="r-order">—</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-row-label"><i class="fa-regular fa-calendar"></i> Date & Time</span>
+          <span class="receipt-row-val" id="r-time">—</span>
+        </div>
+      </div>
+
+      <!-- Bottom divider -->
+      <div class="receipt-divider" style="margin-bottom:1rem">
+        <span class="receipt-dot left"></span>
+        <div class="receipt-dashes"></div>
+        <span class="receipt-dot right"></span>
+      </div>
+
+      <!-- Status badge -->
+      <div class="receipt-status-badge">
+        <i class="fa-solid fa-shield-check"></i> Secured by UNIO Wallet
+      </div>
+
+      <div style="text-align:center;font-size:.65rem;color:var(--gray-400);margin-top:.65rem">
+        Ye tab band kar sakte hain
+      </div>
+    </div>
+  </div>
+
+  <!-- Expired/Error -->
+  <div class="pay-card" id="state-expired" style="display:none">
+    <div class="state show">
+      <div class="state-icon expired"><i class="fa-regular fa-clock"></i></div>
+      <div class="state-title">Invoice Alert</div>
+      <div class="state-sub" id="expired-msg">Link invalid ya expire ho chuka hai.</div>
+    </div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://unio-hazel.vercel.app';
+
+// Fix: pathname ke saare segments me se INV- wala ID nikalo
+// Works for: /pay/INV-XXX  |  /INV-XXX  |  /api/pay/INV-XXX  sab ke liye
+const _segments  = window.location.pathname.split('/').filter(Boolean);
+const invoiceId  = _segments.find(s => s.startsWith('INV-')) || _segments.pop() || null;
+
+let expiresAt = null, timerInt = null, busy = false;
+let invMerchant = '', invAmount = 0;
+
+// Load invoice
+async function loadInvoice() {
+  if (!invoiceId || invoiceId === 'pay') { showExpired('Invalid payment link.'); return; }
+  try {
+    const r = await fetch(`${API}/deposit-gateway/invoice/${invoiceId}`);
+    const d = await r.json();
+    if (d.status !== 'success') { showExpired(d.message || 'Invoice not found.'); return; }
+    document.getElementById('merchant-av').textContent   = (d.merchant_name||'M').charAt(0).toUpperCase();
+    document.getElementById('merchant-name').textContent = d.merchant_name || 'Merchant';
+    document.getElementById('amount-val').textContent    = d.amount;
+    document.getElementById('btn-amount').textContent    = d.amount;
+    invMerchant = d.merchant_name || 'Merchant';
+    invAmount   = d.amount;
+    if (d.note) {
+      const n = document.getElementById('note-row');
+      n.textContent = '📝 ' + d.note; n.classList.add('show');
+    }
+    expiresAt = d.expires_at;
+    startTimer();
+  } catch(e) { toast('Connection error. Refresh karein.', 'red'); }
+}
+
+// Timer
+function startTimer() {
+  if (timerInt) clearInterval(timerInt);
+  timerInt = setInterval(() => {
+    const diff = new Date(expiresAt) - Date.now();
+    if (diff <= 0) { clearInterval(timerInt); showExpired('Link expire ho gaya hai.'); return; }
+    const m = Math.floor(diff/60000), s = Math.floor((diff%60000)/1000);
+    document.getElementById('timer-val').textContent = String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }, 1000);
+}
+
+// Toggle password/pin visibility
+function toggleEye(inputId, iconId) {
+  const inp  = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    icon.className = 'fa-regular fa-eye-slash';
+  } else {
+    inp.type = 'password';
+    icon.className = 'fa-regular fa-eye';
+  }
+}
+
+// Pay
+async function submitPay() {
+  if (busy) return;
+  const mobile   = document.getElementById('mobile-input').value.trim();
+  const password = document.getElementById('password-input').value;
+  const pin      = document.getElementById('pin-input').value.trim();
+
+  if (mobile.length !== 10) { toast('Valid 10-digit mobile daalein','red'); return; }
+  if (!password)             { toast('Password daalo','red'); return; }
+  if (pin.length !== 4)      { toast('4-digit PIN daalo','red'); return; }
+  if (!invoiceId || invoiceId === 'pay') { toast('Invalid invoice link','red'); return; }
+
+  setLoading(true);
+  let d = null;
+  try {
+    const r = await fetch(`${API}/deposit-gateway/pay`, {
+      method:  'POST',
+      headers: {'Content-Type':'application/json'},
+      body:    JSON.stringify({ invoice_id: invoiceId, mobile, pin, password })
+    });
+
+    const raw = await r.text();
+    console.log('[UNIO Pay] raw response:', raw);
+    try { d = JSON.parse(raw); } catch(parseErr) {
+      console.error('[UNIO Pay] JSON parse failed:', raw);
+      toast('Server error. Try again.','red');
+      setLoading(false);
+      return;
+    }
+
+    if (d.status === 'success') {
+      clearInterval(timerInt);
+      showReceipt(d);
+    } else {
+      toast(d.message || 'Payment failed','red');
+      // Shake wrong field
+      if ((d.message||'').toLowerCase().includes('pin')) {
+        document.getElementById('pin-input').classList.add('error');
+        setTimeout(() => document.getElementById('pin-input').classList.remove('error'), 800);
+      } else if ((d.message||'').toLowerCase().includes('password')) {
+        document.getElementById('password-input').classList.add('error');
+        setTimeout(() => document.getElementById('password-input').classList.remove('error'), 800);
+      }
+    }
+  } catch(e) {
+    console.error('[UNIO Pay] fetch error:', e);
+    toast('Network issue. Check internet aur try again.','red');
+  }
+  setLoading(false);
+}
+
+// Receipt show karo
+function showReceipt(d) {
+  document.getElementById('pay-form').style.display = 'none';
+  document.getElementById('inv-card').style.display = 'none';
+
+  const now = new Date();
+  const dt  = now.toLocaleString('en-IN', {
+    timeZone:'Asia/Kolkata', day:'2-digit', month:'short',
+    year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true
+  });
+
+  document.getElementById('r-amount').textContent  = '₹' + (d.amount || invAmount);
+  document.getElementById('r-merchant').textContent = invMerchant;
+  document.getElementById('r-txid').textContent    = d.tx_id || '—';
+  document.getElementById('r-invid').textContent   = invoiceId;
+  document.getElementById('r-order').textContent   = d.order_id || '—';
+  document.getElementById('r-time').textContent    = dt;
+
+  document.getElementById('state-success').style.display = 'block';
+
+  // Confetti burst
+  confettiBurst();
+}
+
+function setLoading(on) {
+  busy = on;
+  const btn = document.getElementById('pay-btn');
+  if (!btn) return;
+  btn.classList.toggle('loading', on);
+  btn.disabled = on;
+}
+
+// Confetti mini burst
+function confettiBurst() {
+  const canvas = document.getElementById('confetti-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+  const colors  = ['#fff','#fbbf24','#34d399','#60a5fa','#f472b6','#a78bfa'];
+  const pieces  = Array.from({length:60}, () => ({
+    x: Math.random()*canvas.width, y: canvas.height + 10,
+    r: 2 + Math.random()*4,
+    vx:(Math.random()-.5)*3, vy:-(4+Math.random()*6),
+    color: colors[Math.floor(Math.random()*colors.length)],
+    life:1, decay:.012+Math.random()*.008
+  }));
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p => {
+      p.x+=p.vx; p.y+=p.vy; p.vy+=.15; p.life-=p.decay;
+      if (p.life<=0) return;
+      ctx.globalAlpha=p.life;
+      ctx.fillStyle=p.color;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,2*Math.PI); ctx.fill();
+    });
+    ctx.globalAlpha=1;
+    if (pieces.some(p=>p.life>0)) requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function showExpired(msg) {
+  clearInterval(timerInt);
+  document.getElementById('pay-form').style.display    = 'none';
+  document.getElementById('state-expired').style.display = 'block';
+  document.getElementById('expired-msg').textContent   = msg;
+}
+
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent=msg; t.className=`toast show ${type}`;
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+loadInvoice();
+</script>
+</body>
+</html>

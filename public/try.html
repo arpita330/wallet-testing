@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNIO Wallet - Secure Pay</title>
+    <style>
+        :root { --primary: #ff5a5f; --secondary: #00baf2; }
+        body { font-family: 'Inter', sans-serif; background: #000; color: #fff; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .card { background: #111; width: 90%; max-width: 380px; padding: 25px; border-radius: 24px; border: 1px solid #333; text-align: center; }
+        .amount { font-size: 48px; font-weight: 800; margin: 20px 0; color: #fff; }
+        .btn { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 16px; border-radius: 14px; text-decoration: none; font-weight: 600; margin-bottom: 12px; transition: 0.2s; }
+        .paytm { background: #fff; color: #000; }
+        .phonepe { background: #5f259f; color: #fff; }
+        .qr-box { background: #fff; padding: 10px; border-radius: 16px; display: inline-block; margin-top: 10px; }
+        .status-text { font-size: 14px; color: #888; margin-top: 15px; animation: blink 1.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div style="font-size: 18px; color: #888;">Adding Balance to UNIO</div>
+    <div class="amount">₹10.00</div>
+
+    <a id="paytm-btn" href="#" class="btn paytm">Pay via Paytm</a>
+    <a id="pp-btn" href="#" class="btn phonepe">Pay via PhonePe</a>
+
+    <div class="qr-box">
+        <img id="qr-img" src="" width="180">
+    </div>
+
+    <div class="status-text" id="status">Waiting for payment... (6s autofetch)</div>
+    <div style="font-size: 10px; color: #444; margin-top: 10px;">ID: <span id="ref-id"></span></div>
+</div>
+
+<script>
+    const upiId = "9302369504@fam";
+    const name = "UNIO Pocket"; // Natural name for FamPay
+    const amt = "10.00";
+    
+    // Unique Reference generate karna zaroori hai
+    const randomRef = "UNIO" + Math.floor(100000 + Math.random() * 900000);
+    document.getElementById('ref-id').innerText = randomRef;
+
+    // Standard Link
+    const upiBase = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(name)}&am=${amt}&tn=${randomRef}&cu=INR&tr=${randomRef}`;
+
+    // Specific Deep Links for direct opening (Bypasses System Block)
+    document.getElementById('paytm-btn').href = `paytmmp://cash_wallet?pa=${upiId}&pn=${encodeURIComponent(name)}&am=${amt}&tn=${randomRef}&cu=INR`;
+    document.getElementById('pp-btn').href = `phonepe://pay?pa=${upiId}&pn=${encodeURIComponent(name)}&am=${amt}&tn=${randomRef}&cu=INR`;
+
+    // QR Generation
+    document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiBase)}`;
+
+    // --- 6 SECOND AUTO-FETCH LOGIC ---
+    let checkInterval = setInterval(() => {
+        // Aapka backend API jo MacroDroid se data receive karta hai
+        fetch(`/api/check-payment?ref=${randomRef}`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === "success") {
+                clearInterval(checkInterval);
+                document.getElementById('status').innerText = "✅ Payment Received!";
+                document.getElementById('status').style.color = "#4CAF50";
+                setTimeout(() => { window.location.href = "/dashboard"; }, 2000);
+            }
+        }).catch(e => console.log("Checking..."));
+    }, 6000);
+</script>
+
+</body>
+</html>

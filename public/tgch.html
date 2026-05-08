@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>UNIO — TG ID Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:      #07090f;
+  --s1:      #0d1117;
+  --s2:      #111823;
+  --border:  #1c2638;
+  --teal:    #2dd4bf;
+  --blue:    #3b82f6;
+  --purple:  #8b5cf6;
+  --red:     #f43f5e;
+  --amber:   #f59e0b;
+  --green:   #10b981;
+  --text:    #e2e8f0;
+  --muted:   #4b607a;
+  --font:    'Figtree', sans-serif;
+  --mono:    'IBM Plex Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+}
+
+/* ── Login ── */
+#login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse 600px 400px at 50% -10%, rgba(45,212,191,0.07) 0%, transparent 70%),
+    var(--bg);
+}
+
+.login-card {
+  width: 360px;
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 40px 32px;
+  text-align: center;
+  animation: up 0.4s ease both;
+}
+
+@keyframes up {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.tg-icon {
+  width: 52px; height: 52px;
+  background: linear-gradient(135deg, #2dd4bf33, #3b82f633);
+  border: 1px solid rgba(45,212,191,0.25);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 18px;
+  font-size: 24px;
+}
+
+.login-card h2 {
+  font-size: 20px; font-weight: 800;
+  letter-spacing: -0.4px;
+  margin-bottom: 4px;
+}
+
+.login-card p {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 28px;
+}
+
+.field {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.field input {
+  width: 100%;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 20px;
+  letter-spacing: 8px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.field input:focus { border-color: var(--teal); }
+.field input::placeholder { letter-spacing: 2px; font-size: 14px; color: var(--muted); }
+
+.btn {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 11px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-teal {
+  background: linear-gradient(135deg, var(--teal), var(--blue));
+  color: #fff;
+}
+
+.btn-teal:hover { opacity: 0.88; transform: translateY(-1px); }
+
+.err { color: var(--red); font-size: 12px; margin-top: 10px; display: none; }
+
+/* ── App ── */
+#app { display: none; }
+
+header {
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  height: 58px;
+  display: flex; align-items: center;
+  padding: 0 28px;
+  justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}
+
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 15px; font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.brand-dot {
+  width: 10px; height: 10px;
+  background: var(--teal);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--teal);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,100% { opacity:1; }
+  50%      { opacity:0.4; }
+}
+
+.hdr-right {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: rgba(45,212,191,0.1);
+  border: 1px solid rgba(45,212,191,0.2);
+  color: var(--teal);
+}
+
+.logout {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 5px 14px;
+  border-radius: 8px;
+  font-family: var(--font);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logout:hover { border-color: var(--red); color: var(--red); }
+
+/* ── Main Layout ── */
+.main {
+  max-width: 860px;
+  margin: 40px auto;
+  padding: 0 24px 60px;
+}
+
+.page-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 4px;
+}
+
+.page-sub {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 32px;
+}
+
+/* ── Search Box ── */
+.search-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.search-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--teal), var(--blue));
+}
+
+.search-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.search-row {
+  display: flex;
+  gap: 10px;
+}
+
+.inp {
+  flex: 1;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.inp:focus { border-color: var(--teal); }
+.inp::placeholder { color: var(--muted); font-family: var(--font); font-size: 13px; }
+
+.btn-search {
+  padding: 12px 22px;
+  background: linear-gradient(135deg, var(--teal), var(--blue));
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.btn-search:hover { opacity: 0.88; }
+.btn-search:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── User Card ── */
+#user-result { display: none; animation: up 0.35s ease both; }
+
+.user-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.user-card-header {
+  background: var(--s2);
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; font-weight: 800;
+  background: linear-gradient(135deg, var(--purple), var(--blue));
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.user-name-group {
+  display: flex; align-items: center; gap: 12px;
+}
+
+.user-name {
+  font-size: 16px; font-weight: 700;
+}
+
+.user-mobile-tag {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.status-active { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25); color: var(--green); }
+.status-inactive { background: rgba(244,63,94,0.12); border: 1px solid rgba(244,63,94,0.25); color: var(--red); }
+
+/* ── Info Grid ── */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+@media (max-width: 600px) { .info-grid { grid-template-columns: 1fr; } }
+
+.info-item {
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+.info-item:nth-child(2n) { border-right: none; }
+.info-item:nth-last-child(-n+2) { border-bottom: none; }
+
+.info-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+
+.info-value {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.info-value.highlight { color: var(--teal); }
+.info-value.balance { color: var(--green); font-size: 16px; font-weight: 700; }
+.info-value.no-tg { color: var(--amber); }
+.info-value.has-tg { color: #818cf8; }
+
+/* ── Update TG Box ── */
+.update-card {
+  background: var(--s1);
+  border: 1px solid rgba(45,212,191,0.2);
+  border-radius: 16px;
+  padding: 22px 24px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.update-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--purple), var(--teal));
+}
+
+.update-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.update-sub {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+.update-row {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-update {
+  padding: 12px 22px;
+  background: linear-gradient(135deg, var(--purple), var(--blue));
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-update:hover { opacity: 0.88; }
+.btn-update:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-clear {
+  padding: 12px 18px;
+  background: rgba(244,63,94,0.1);
+  border: 1px solid rgba(244,63,94,0.25);
+  border-radius: 10px;
+  color: var(--red);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-clear:hover { background: rgba(244,63,94,0.2); }
+
+/* ── Toast ── */
+#toast {
+  position: fixed;
+  bottom: 28px; right: 28px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-size: 13px;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  transform: translateY(70px);
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 999;
+  max-width: 300px;
+}
+
+#toast.show { transform: translateY(0); opacity: 1; }
+
+.tdot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+
+/* ── Log ── */
+.log-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.log-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.log-body {
+  font-family: var(--mono);
+  font-size: 12px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.log-line {
+  padding: 10px 20px;
+  border-bottom: 1px solid rgba(28,38,56,0.5);
+  display: flex; gap: 12px; align-items: flex-start;
+  color: var(--muted);
+}
+
+.log-line:last-child { border-bottom: none; }
+.log-time { color: var(--muted); flex-shrink: 0; }
+.log-msg.ok { color: var(--green); }
+.log-msg.err { color: var(--red); }
+.log-msg.info { color: var(--teal); }
+
+.log-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  font-family: var(--mono);
+}
+
+.spinner-btn {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="login-card">
+    <div class="tg-icon">✈️</div>
+    <h2>TG ID Manager</h2>
+    <p>UNIO Admin Tool — Enter PIN to continue</p>
+    <div class="field">
+      <input type="password" id="pin-input" placeholder="• • • •" maxlength="4" inputmode="numeric" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="btn btn-teal" onclick="doLogin()">Unlock</button>
+    <div class="err" id="login-err">❌ Wrong PIN. Try again.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="brand">
+      <div class="brand-dot"></div>
+      UNIO TG Manager
+    </div>
+    <div class="hdr-right">
+      <span class="tag">ADMIN</span>
+      <button class="logout" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="page-title">Telegram ID Manager</div>
+    <div class="page-sub">Mobile number se user dhundo, puri info dekho, aur TG ID update karo</div>
+
+    <!-- Search -->
+    <div class="search-card">
+      <div class="search-label">🔍 User Lookup by Mobile</div>
+      <div class="search-row">
+        <input class="inp" id="mobile-inp" type="tel" placeholder="Enter mobile number (e.g. 9876543210)" maxlength="15"
+               onkeydown="if(event.key==='Enter')lookupUser()"/>
+        <button class="btn-search" id="search-btn" onclick="lookupUser()">
+          Search
+        </button>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div id="user-result">
+      <!-- User Card -->
+      <div class="user-card">
+        <div class="user-card-header">
+          <div class="user-name-group">
+            <div class="user-avatar" id="u-avatar">?</div>
+            <div>
+              <div class="user-name" id="u-name">—</div>
+              <div class="user-mobile-tag" id="u-mobile-tag">—</div>
+            </div>
+          </div>
+          <span class="status-badge" id="u-status-badge">—</span>
+        </div>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">User ID</div>
+            <div class="info-value highlight" id="u-id">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Wallet Balance</div>
+            <div class="info-value balance" id="u-balance">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Telegram ID</div>
+            <div class="info-value" id="u-tg">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Registered</div>
+            <div class="info-value" id="u-date">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Mobile</div>
+            <div class="info-value" id="u-mob">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">KYC / Verified</div>
+            <div class="info-value" id="u-kyc">—</div>
+          </div>
+          <div class="info-item" style="grid-column:1/-1; border-right:none;">
+            <div class="info-label">Email</div>
+            <div class="info-value" id="u-email">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Update TG -->
+      <div class="update-card">
+        <div class="update-title">✈️ Update Telegram ID</div>
+        <div class="update-sub">Naya TG ID enter karo — purana replace ho jayega</div>
+        <div class="update-row">
+          <input class="inp" id="tg-inp" type="text" placeholder="e.g. 123456789 or @username"
+                 onkeydown="if(event.key==='Enter')updateTG()"/>
+          <button class="btn-update" id="update-btn" onclick="updateTG()">Update TG ID</button>
+          <button class="btn-clear" id="clear-btn" onclick="clearTG()">Clear</button>
+        </div>
+      </div>
+
+      <!-- Action Log -->
+      <div class="log-card">
+        <div class="log-header">📋 Action Log</div>
+        <div class="log-body" id="log-body">
+          <div class="log-empty">Actions yahan dikhenge...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast">
+  <div class="tdot" id="tdot"></div>
+  <span id="tmsg"></span>
+</div>
+
+<script>
+const API   = '';          // same origin — adjust if different
+const PASS  = '8435';
+let currentMobile = null;
+
+// ── Login ──
+function doLogin() {
+  const pin = document.getElementById('pin-input').value.trim();
+  if (pin === PASS) {
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display   = 'block';
+    document.getElementById('mobile-inp').focus();
+  } else {
+    const err = document.getElementById('login-err');
+    err.style.display = 'block';
+    document.getElementById('pin-input').value = '';
+    setTimeout(() => err.style.display = 'none', 2500);
+  }
+}
+
+document.getElementById('pin-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+function logout() {
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('app').style.display   = 'none';
+  document.getElementById('pin-input').value = '';
+  document.getElementById('user-result').style.display = 'none';
+  currentMobile = null;
+}
+
+// ── Toast ──
+function toast(msg, type = 'ok') {
+  const el   = document.getElementById('toast');
+  const dot  = document.getElementById('tdot');
+  document.getElementById('tmsg').textContent = msg;
+  const colors = { ok: '#10b981', err: '#f43f5e', info: '#2dd4bf', warn: '#f59e0b' };
+  dot.style.background = colors[type] || colors.ok;
+  el.className = 'show';
+  clearTimeout(window._tt);
+  window._tt = setTimeout(() => el.className = '', 3500);
+}
+
+// ── Log ──
+function addLog(msg, type = 'info') {
+  const body = document.getElementById('log-body');
+  const empty = body.querySelector('.log-empty');
+  if (empty) empty.remove();
+  const time = new Date().toLocaleTimeString('en-IN');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="log-time">[${time}]</span><span class="log-msg ${type}">${msg}</span>`;
+  body.prepend(line);
+}
+
+// ── API helper ──
+async function api(path, method = 'GET', body = null) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json', 'x-admin-pass': PASS }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res  = await fetch('/tgch' + path, opts);
+  const data = await res.json();
+  return data;
+}
+
+// ── Lookup ──
+async function lookupUser() {
+  const mobile = document.getElementById('mobile-inp').value.trim();
+  if (!mobile) { toast('Mobile number daalo', 'warn'); return; }
+
+  const btn = document.getElementById('search-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-btn"></span>';
+
+  try {
+    const data = await api('/lookup?mobile=' + encodeURIComponent(mobile));
+
+    if (data.status !== 'success') {
+      toast(data.message, 'err');
+      addLog('Lookup failed: ' + data.message, 'err');
+      document.getElementById('user-result').style.display = 'none';
+      return;
+    }
+
+    currentMobile = mobile;
+    renderUser(data.user);
+    document.getElementById('user-result').style.display = 'block';
+    addLog(`User found: ${data.user.name} (${mobile})`, 'ok');
+    toast('User mil gaya!', 'ok');
+
+  } catch(e) {
+    toast('Server error: ' + e.message, 'err');
+    addLog('Error: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Search';
+  }
+}
+
+function renderUser(u) {
+  // Avatar
+  const av = document.getElementById('u-avatar');
+  av.textContent = (u.name || 'U')[0].toUpperCase();
+
+  document.getElementById('u-name').textContent       = u.name || '—';
+  document.getElementById('u-mobile-tag').textContent = u.mobile || '—';
+  document.getElementById('u-id').textContent         = u._id || '—';
+  document.getElementById('u-mob').textContent        = u.mobile || '—';
+  document.getElementById('u-email').textContent      = u.email || 'Not set';
+  document.getElementById('u-balance').textContent    = '₹' + (u.balance || 0).toLocaleString('en-IN');
+
+  // TG ID
+  const tgEl = document.getElementById('u-tg');
+  if (u.tg_id) {
+    tgEl.textContent  = u.tg_id;
+    tgEl.className    = 'info-value has-tg';
+    document.getElementById('tg-inp').value = u.tg_id;
+  } else {
+    tgEl.textContent  = 'Not linked';
+    tgEl.className    = 'info-value no-tg';
+    document.getElementById('tg-inp').value = '';
+  }
+
+  // Date
+  const d = u.createdAt || u.created_at;
+  document.getElementById('u-date').textContent = d
+    ? new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
+    : '—';
+
+  // KYC
+  document.getElementById('u-kyc').textContent =
+    u.is_verified ? '✅ Verified' : u.kyc ? '⏳ Pending' : '❌ Not done';
+
+  // Status badge
+  const sb = document.getElementById('u-status-badge');
+  if (u.is_active === false) {
+    sb.textContent = 'INACTIVE';
+    sb.className   = 'status-badge status-inactive';
+  } else {
+    sb.textContent = 'ACTIVE';
+    sb.className   = 'status-badge status-active';
+  }
+}
+
+// ── Update TG ──
+async function updateTG() {
+  if (!currentMobile) { toast('Pehle user search karo', 'warn'); return; }
+  const tg_id = document.getElementById('tg-inp').value.trim();
+  if (!tg_id) { toast('TG ID daalo', 'warn'); return; }
+
+  const btn = document.getElementById('update-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-btn"></span> Updating...';
+
+  try {
+    const data = await api('/update-tg', 'POST', { mobile: currentMobile, tg_id });
+
+    if (data.status !== 'success') {
+      toast(data.message, 'err');
+      addLog('Update failed: ' + data.message, 'err');
+      return;
+    }
+
+    toast('TG ID update ho gaya! ✅', 'ok');
+    addLog(`TG updated for ${data.name}: ${data.old_tg_id || 'null'} → ${data.new_tg_id}`, 'ok');
+
+    // Refresh
+    document.getElementById('u-tg').textContent = tg_id;
+    document.getElementById('u-tg').className   = 'info-value has-tg';
+
+  } catch(e) {
+    toast('Server error: ' + e.message, 'err');
+    addLog('Error: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Update TG ID';
+  }
+}
+
+// ── Clear TG ──
+async function clearTG() {
+  if (!currentMobile) { toast('Pehle user search karo', 'warn'); return; }
+  if (!confirm('Is user ka TG ID remove karna chahte ho?')) return;
+
+  const btn = document.getElementById('clear-btn');
+  btn.disabled = true;
+
+  try {
+    const data = await api('/clear-tg', 'POST', { mobile: currentMobile });
+
+    if (data.status !== 'success') {
+      toast(data.message, 'err');
+      addLog('Clear failed: ' + data.message, 'err');
+      return;
+    }
+
+    toast('TG ID clear ho gaya', 'warn');
+    addLog(`TG cleared for ${data.mobile}`, 'info');
+    document.getElementById('u-tg').textContent = 'Not linked';
+    document.getElementById('u-tg').className   = 'info-value no-tg';
+    document.getElementById('tg-inp').value     = '';
+
+  } catch(e) {
+    toast('Server error: ' + e.message, 'err');
+    addLog('Error: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
