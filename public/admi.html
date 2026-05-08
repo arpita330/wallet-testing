@@ -70,6 +70,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#f0f4ff;min-height:10
 .user-bal{font-size:.9rem;font-weight:900;color:#0057ff}
 .empty{text-align:center;padding:2rem;color:#94a3b8;font-size:.8rem}
 .refresh-btn{background:#eff6ff;border:none;color:#0057ff;padding:.5rem 1rem;border-radius:.75rem;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:1rem}
+.logout-btn{background:#fee2e2;border:none;color:#dc2626;padding:.5rem 1rem;border-radius:.75rem;font-size:.7rem;font-weight:700;cursor:pointer;font-family:inherit;margin-left:.5rem}
 </style>
 </head>
 <body>
@@ -94,7 +95,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#f0f4ff;min-height:10
 
 <div class="top-bar">
   <h1>UNIO Admin</h1>
-  <span style="font-size:.65rem;color:#94a3b8;font-weight:700">&#128274; Secure</span>
+  <div>
+    <button class="refresh-btn" onclick="loadStats();loadWithdrawals();loadDeposits();loadTxns();loadUsers();" style="margin-bottom:0"><i class="fa-solid fa-rotate-right"></i> Refresh All</button>
+    <button class="logout-btn" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+  </div>
 </div>
 
 <div class="container">
@@ -136,14 +140,14 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:#f0f4ff;min-height:10
       <div class="section-title"><i class="fa-solid fa-plus"></i> Add Balance</div>
       <div id="bal-msg" class="msg"></div>
       <input type="number" class="a-input" id="b-mobile" placeholder="Mobile Number">
-      <input type="number" class="a-input" id="b-amount" placeholder="Amount (&#8377;)">
+      <input type="number" class="a-input" id="b-amount" placeholder="Amount (₹)">
       <button class="a-btn" style="background:#16a34a" onclick="addBalance()"><i class="fa-solid fa-plus"></i> Add Balance</button>
     </div>
     <div class="section-card">
       <div class="section-title"><i class="fa-solid fa-minus"></i> Deduct Balance</div>
       <div id="ded-msg" class="msg"></div>
       <input type="number" class="a-input" id="d-mobile" placeholder="Mobile Number">
-      <input type="number" class="a-input" id="d-amount" placeholder="Amount (&#8377;)">
+      <input type="number" class="a-input" id="d-amount" placeholder="Amount (₹)">
       <button class="a-btn" style="background:#dc2626" onclick="deductBalance()"><i class="fa-solid fa-minus"></i> Deduct Balance</button>
     </div>
   </div>
@@ -206,6 +210,16 @@ function doLogin() {
   }
 }
 
+function logout() {
+  localStorage.removeItem('unio_admin_v2');
+  document.getElementById('login-wrap').style.display = 'flex';
+  document.getElementById('dashboard').style.display  = 'none';
+  document.getElementById('pass-input').value = '';
+  document.getElementById('pass-input').disabled = false;
+  document.getElementById('login-spinner').style.display = 'none';
+  document.getElementById('login-err').classList.remove('show');
+}
+
 function showDashboard() {
   document.getElementById('login-wrap').style.display = 'none';
   document.getElementById('dashboard').style.display  = 'block';
@@ -238,7 +252,9 @@ async function loadStats() {
       document.getElementById('s-bal').textContent   = '₹'+parseFloat(d.total_balance||0).toFixed(2);
       document.getElementById('s-api').textContent   = '₹'+parseFloat(d.api_volume||0).toFixed(2);
     }
-  } catch(e){}
+  } catch(e){
+    console.error('Stats error:', e);
+  }
 }
 
 async function loadWithdrawals() {
@@ -266,7 +282,10 @@ async function loadWithdrawals() {
       </div>`;
     });
     list.innerHTML=html;
-  }catch(e){list.innerHTML='<div class="empty">Error!</div>';}
+  }catch(e){
+    list.innerHTML='<div class="empty">Error loading withdrawals!</div>';
+    console.error('Withdrawals error:', e);
+  }
 }
 
 async function approveWithdraw(tx_id, id) {
@@ -329,7 +348,10 @@ async function loadDeposits() {
       </div>`;
     });
     list.innerHTML=html;
-  }catch(e){list.innerHTML='<div class="empty">Error!</div>';}
+  }catch(e){
+    list.innerHTML='<div class="empty">Error loading deposits!</div>';
+    console.error('Deposits error:', e);
+  }
 }
 
 async function approveDeposit(id, mobile, amount) {
@@ -359,4 +381,120 @@ async function rejectDeposit(id) {
   try{
     const r=await fetch(API+'/admin/reject-deposit/'+id,{method:'POST',headers:aHJ()});
     const d=await r.json();
-    if(
+    if(d.status==='success'){
+      if(el){el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);}
+      showMsg('bal-msg','Deposit rejected!','success');
+    } else showMsg('bal-msg',d.message||'Failed!','error');
+  }catch(e){showMsg('bal-msg','Server error!','error');}
+}
+
+async function addBalance() {
+  const mobile = document.getElementById('b-mobile').value.trim();
+  const amount = document.getElementById('b-amount').value.trim();
+  if(!mobile || !amount) {
+    showMsg('bal-msg','Please fill all fields','error');
+    return;
+  }
+  if(!confirm('Add ₹'+amount+' to '+mobile+'?')) return;
+  try{
+    const r=await fetch(API+'/admin/add-balance',{
+      method:'POST',
+      headers:aHJ(),
+      body:JSON.stringify({mobile:mobile,amount:parseFloat(amount)})
+    });
+    const d=await r.json();
+    if(d.status==='success'){
+      showMsg('bal-msg','₹'+amount+' added to '+mobile+'!','success');
+      document.getElementById('b-mobile').value='';
+      document.getElementById('b-amount').value='';
+    } else showMsg('bal-msg',d.message||'Failed!','error');
+  }catch(e){showMsg('bal-msg','Server error!','error');}
+}
+
+async function deductBalance() {
+  const mobile = document.getElementById('d-mobile').value.trim();
+  const amount = document.getElementById('d-amount').value.trim();
+  if(!mobile || !amount) {
+    showMsg('ded-msg','Please fill all fields','error');
+    return;
+  }
+  if(!confirm('Deduct ₹'+amount+' from '+mobile+'?')) return;
+  try{
+    const r=await fetch(API+'/admin/deduct-balance',{
+      method:'POST',
+      headers:aHJ(),
+      body:JSON.stringify({mobile:mobile,amount:parseFloat(amount)})
+    });
+    const d=await r.json();
+    if(d.status==='success'){
+      showMsg('ded-msg','₹'+amount+' deducted from '+mobile+'!','success');
+      document.getElementById('d-mobile').value='';
+      document.getElementById('d-amount').value='';
+    } else showMsg('ded-msg',d.message||'Failed!','error');
+  }catch(e){showMsg('ded-msg','Server error!','error');}
+}
+
+async function loadTxns() {
+  const list=document.getElementById('txns-list');
+  list.innerHTML='<div class="empty"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>';
+  try{
+    const r=await fetch(API+'/admin/transactions',{headers:aH()});
+    const d=await r.json();
+    if(!d.transactions||d.transactions.length===0){
+      list.innerHTML='<div class="empty">No transactions found!</div>';return;
+    }
+    let html='';
+    d.transactions.forEach(t=>{
+      const amt=parseFloat(t.amount).toFixed(2);
+      const type=t.type||'transfer';
+      const status=t.status||'pending';
+      const time=new Date(t.tx_time).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+      const sender=t.sender_id?.mobile||t.sender_id?.name||'System';
+      const receiver=t.receiver_id?.mobile||t.receiver_id?.name||'System';
+      const badgeClass=status==='success'?'success':status==='failed'?'failed':status==='rejected'?'rejected':'pending';
+      html+=`<div class="txn-item">
+        <div class="txn-left">
+          <p>${sender} → ${receiver}</p>
+          <span>${time} · ${type} · <span class="badge ${badgeClass}">${status}</span></span>
+        </div>
+        <div class="txn-amt">₹${amt}</div>
+      </div>`;
+    });
+    list.innerHTML=html;
+  }catch(e){
+    list.innerHTML='<div class="empty">Error loading transactions!</div>';
+    console.error('Txns error:', e);
+  }
+}
+
+async function loadUsers() {
+  const list=document.getElementById('users-list');
+  list.innerHTML='<div class="empty"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>';
+  try{
+    const r=await fetch(API+'/admin/users',{headers:aH()});
+    const d=await r.json();
+    if(!d.users||d.users.length===0){
+      list.innerHTML='<div class="empty">No users found!</div>';return;
+    }
+    let html='';
+    d.users.forEach(u=>{
+      const name=u.name||'User';
+      const mobile=u.mobile||'—';
+      const bal=parseFloat(u.balance||0).toFixed(2);
+      html+=`<div class="user-item">
+        <div>
+          <div class="user-name">${name}</div>
+          <div class="user-mob">📱 ${mobile}</div>
+        </div>
+        <div class="user-bal">₹${bal}</div>
+      </div>`;
+    });
+    list.innerHTML=html;
+  }catch(e){
+    list.innerHTML='<div class="empty">Error loading users!</div>';
+    console.error('Users error:', e);
+  }
+}
+</script>
+</body>
+  </html>
